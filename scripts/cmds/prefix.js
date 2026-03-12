@@ -6,41 +6,27 @@ module.exports = {
     config: {
         name: "prefix",
         version: "1.6",
-        author: "siyam",
+        author: "MR᭄﹅ MAHABUB﹅ メꪜ",
         countDown: 5,
         role: 0,
-        description: "Change prefix & show prefix with video",
+        description: "Change the bot's command prefix in your chat or globally (admin only)",
         category: "config",
     },
 
     langs: {
         en: {
             reset: "Your prefix has been reset to default: %1",
-            onlyAdmin: "Only admin can change system prefix",
-            confirmGlobal: "React to confirm global prefix change",
-            confirmThisThread: "React to confirm prefix change in this chat",
-            successGlobal: "Global prefix updated: %1",
-            successThisThread: "Prefix updated for this chat: %1",
-
-            myPrefix:
-`●❯────────────────❮●
-𝙒𝙀𝙇𝘾𝙊𝙈𝙀 🏴‍☠️ ＿＿＿＿＿
-
-— 𝘿𝙀𝙑𝙀𝙇𝙊𝙋𝙀𝙍 : 𝙃𝙔𝙋𝙀𝙍 𝙊𝙎 •
-𝘼𝘾𝙎 𝙎𝙄𝙔𝘼𝙈 👀🌪️
-
-— 𝙎𝙀𝙀 𝙊𝙒𝙉 𝙋𝙍𝙀𝙁𝙄𝙓 → 𝙎𝙄𝘼𝙈 𝘽𝙊𝙏 008 ☄️🚩
-
-‣ Global Prefix: %1
-‣ Group Prefix: %2  
-
-‣ CEO SIYAM 🌪️☄️🏴‍☠️
-●❯────────────────❮●`
+            onlyAdmin: "Only admin can change the system bot prefix",
+            confirmGlobal: "Please react to this message to confirm changing the system bot prefix",
+            confirmThisThread: "Please react to this message to confirm changing the prefix in your chat",
+            successGlobal: "Changed system bot prefix to: %1",
+            successThisThread: "Changed prefix in your chat to: %1",
+            myPrefix: "●❯────────────────❮●\n\n‣ 𝐆𝐥𝐨𝐛𝐚𝐥 𝐩𝐫𝐞𝐟𝐢𝐱: %1 \n\n‣ 𝐘𝐨𝐮𝐫 𝐠𝐫𝐨𝐮𝐩 𝐩𝐫𝐞𝐟𝐢𝐱: %2\n\n‣ 𝐀𝐝𝐦𝐢𝐧 \n\n‣ —͟͟͞͞𝗖𝗘𝗢͜͡ Ariyan☄️⚡💫\n\n‣ 𝐅𝐚𝐜𝐞𝐛𝐨𝐨𝐤 ⓕ\n‣\n\n●❯────────────────❮●"
         }
     },
 
     onStart: async function ({ message, role, args, commandName, event, threadsData, getLang }) {
-        if (!args[0]) return message.reply("Prefix din, or 'reset' likhen.");
+        if (!args[0]) return message.reply("Please provide a new prefix or use 'reset'.");
 
         if (args[0] === "reset") {
             await threadsData.set(event.threadID, null, "data.prefix");
@@ -49,7 +35,7 @@ module.exports = {
 
         const newPrefix = args[0];
         if (newPrefix.length > 5 || newPrefix.length === 0)
-            return message.reply("ok start siyam ?");
+            return message.reply("Prefix should be between 1 to 5 characters.");
 
         const formSet = {
             commandName,
@@ -60,37 +46,41 @@ module.exports = {
         if (args[1] === "-g") {
             if (role < 2) return message.reply(getLang("onlyAdmin"));
             else formSet.setGlobal = true;
-        } else formSet.setGlobal = false;
+        } else {
+            formSet.setGlobal = false;
+        }
 
-        return message.reply(
-            args[1] === "-g" ? getLang("confirmGlobal") : getLang("confirmThisThread"),
-            (err, info) => {
-                formSet.messageID = info.messageID;
-                global.GoatBot.onReaction.set(info.messageID, formSet);
-                setTimeout(() => global.GoatBot.onReaction.delete(info.messageID), 60000);
-            }
-        );
+        return message.reply(args[1] === "-g" ? getLang("confirmGlobal") : getLang("confirmThisThread"), (err, info) => {
+            formSet.messageID = info.messageID;
+            global.GoatBot.onReaction.set(info.messageID, formSet);
+
+            // Optional: Clean up after 60 seconds
+            setTimeout(() => {
+                global.GoatBot.onReaction.delete(info.messageID);
+            }, 60000);
+        });
     },
 
-    // VIDEO SYSTEM
-    onChat: async function ({ event, message, getLang }) {
-        if (event.body && event.body.toLowerCase() === "prefix") {
+    onChat: async function ({ event, message, getLang }) {  
+        if (event.body && event.body.toLowerCase() === "prefix") {  
             try {
-                const videoUrl = "https://files.catbox.moe/svtofp.mp4";
+                const response = await axios.get('https://mahabub-apis.vercel.app/prefix');
+                const videoUrl = response.data.data;
 
-                return message.reply({
-                    body: getLang("myPrefix",
-                        global.GoatBot.config.prefix,
-                        utils.getPrefix(event.threadID)
-                    ),
-                    attachment: await global.utils.getStreamFromURL(videoUrl)
-                });
+                if (videoUrl) {
+                    return message.reply({
+                        body: getLang("myPrefix", global.GoatBot.config.prefix, utils.getPrefix(event.threadID)),
+                        attachment: await global.utils.getStreamFromURL(videoUrl)
+                    });
+                } else {
+                    return message.reply("No video available at the moment.");
+                }
 
-            } catch (e) {
-                console.log(e);
-                return message.reply("⚠️ return siyam 009 api //🚩");
+            } catch (error) {
+                console.error("Error fetching video:", error);
+                return message.reply("An error occurred while fetching the video.");
             }
-        }
+        }  
     },
 
     onReaction: async function ({ message, threadsData, event, Reaction, getLang }) {
