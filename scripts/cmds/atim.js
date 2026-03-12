@@ -3,39 +3,40 @@ let isWarOn = true;
 module.exports = {
   config: {
     name: "atim",
-    version: "3.0",
-    author: "Siyam + ChatGPT",
+    aliases: ["chud"],
+    version: "1.3",
+    author: "nexo_here + fixed by Yeasin",
     role: 2,
     category: "admin",
-    noPrefix: true
+    guide: {
+      en: "chud @mention to attack, chud off to stop"
+    }
   },
 
-  onStart: async function () {},
+  onStart: async function ({ api, event, args }) {
+    const content = args.join(" ").toLowerCase();
+    const mention = Object.keys(event.mentions)[0];
 
-  onChat: async function ({ api, event }) {
-    const text = event.body?.toLowerCase();
-
-    // ATIM শুধুমাত্র 'atim' keyword এ চলবে
-    if (!text.startsWith("atim")) return;
-
-    // React on just "atim"
-    if (text === "atim") {
-      api.setMessageReaction("🔥", event.messageID, () => {}, true);
-      return;
+    // Turn off war mode
+    if (content === "off") {
+      isWarOn = false;
+      return api.sendMessage("❌ | War mode turned OFF.", event.threadID);
     }
 
-    // Warn if user typed "atim sudo" without mentioning
-    if (text === "atim sudo" && Object.keys(event.mentions).length === 0) {
-      return api.sendMessage("⚠️ | সিয়াম বস খান..কির পোলারে একবার মেনশন দেন💚🖇️", event.threadID, event.messageID);
+    // Auto turn on if mention present and war currently off
+    if (mention && !isWarOn) {
+      isWarOn = true;
     }
 
+    // If war mode off, do nothing
     if (!isWarOn) return;
 
-    const mention = Object.keys(event.mentions)[0];
-    if (!mention) return;
+    // Require mention to start war messages
+    if (!mention) return api.sendMessage("⚠️ | Tag someone to start war.", event.threadID);
 
     const name = event.mentions[mention];
-    const tag = [{ id: mention, tag: name }];
+    const arraytag = [{ id: mention, tag: name }];
+    const send = msg => api.sendMessage({ body: msg, mentions: arraytag }, event.threadID);
 
     const messages = [
       `𝗟𝗢𝗔𝗗𝗜𝗡𝗚 ▓▓▓▓▓░░░░░ 99% ..\n👾🔥𝗔͟𝗖͟͠𝗧𝗜͟͠𝗩𝗘𝗗❔🍷👀\n\n███████████████ 100% 🎭⚠️𝗦𝗬͜͡𝗦͟𝗧͟͠𝗘͟𝗠 𝗟͟𝗢͟͠𝗖͟𝗞͟͠𝗘͟𝗗 ⚠️ ${name}`,
@@ -82,9 +83,7 @@ module.exports = {
     ];
 
     messages.forEach((msg, i) => {
-      setTimeout(() => {
-        api.sendMessage({ body: msg, mentions: tag }, event.threadID);
-      }, 1800 * i);
+      setTimeout(() => send(msg), 3000 * i);
     });
   }
 };
